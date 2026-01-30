@@ -12,7 +12,6 @@
     </script>
     <script type="module">
       import * as THREE from "three";
-      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
       import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
       // レンダラーを作成
@@ -28,13 +27,40 @@
 
       // カメラを作成
       const camera = new THREE.PerspectiveCamera(45, 1.0);
-      camera.position.set(0, 30, +100);
 
-      // カメラコントローラー
-      const controls = new OrbitControls(camera, canvasElement);
-      controls.target.set(0, 0, 0);
-      controls.update();
-      camera.lookAt(new THREE.Vector3(0, 0, 0));
+      // カメラの回転パラメータ
+      const cameraDistance = 100; // カメラと対象の距離
+      const cameraHeight = 30;    // カメラの高さ
+      const target = new THREE.Vector3(0, 0, 0); // 注視点
+      const initialAngle = Math.PI * (-5 / 180); // 初期角度: 5°左に回転
+      let cameraAngle = initialAngle; // 現在のカメラ角度（ラジアン）
+      let targetCameraAngle = initialAngle; // 目標のカメラ角度
+      const easing = 0.03; // イージングの強さ（小さいほど滑らか・余韻が出る）
+      const rotationRange = Math.PI * (15 / 180); // 回転範囲（±15度）
+
+      // カメラ位置を更新する関数
+      function updateCameraPosition() {
+        // イージングで滑らかに目標角度に近づく
+        cameraAngle += (targetCameraAngle - cameraAngle) * easing;
+
+        camera.position.x = target.x + cameraDistance * Math.sin(cameraAngle);
+        camera.position.y = cameraHeight;
+        camera.position.z = target.z + cameraDistance * Math.cos(cameraAngle);
+        camera.lookAt(target);
+      }
+
+      // 初期位置を設定
+      updateCameraPosition();
+
+      // マウス移動でカメラを回転（ドラッグ不要）
+      canvasElement.addEventListener("mousemove", (event) => {
+        // マウスのX位置を-1〜1の範囲に正規化
+        const rect = canvasElement.getBoundingClientRect();
+        const normalizedX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+
+        // 正規化された位置を回転角度に変換（初期角度を基準に±15度）
+        targetCameraAngle = initialAngle - normalizedX * rotationRange;
+      });
 
       // ライト
       const directionalLight = new THREE.DirectionalLight(0xffffff);
@@ -75,6 +101,7 @@
       }
 
       function tick() {
+        updateCameraPosition(); // イージングを適用
         renderer.render(scene, camera);
         requestAnimationFrame(tick);
       }
