@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.175.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.175.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+      // サイズを指定
+      const width = 960;
+      const height = 540;
+
+      // レンダラーを作成
+      const canvasElement = document.querySelector("#myCanvas");
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvasElement,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(width, height);
+
+      // シーンを作成
+      const scene = new THREE.Scene();
+
+      // カメラを作成
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
+      camera.position.set(10, 1, 1);
+
+      // カメラコントローラー
+      const controls = new OrbitControls(camera, canvasElement);
+      controls.target.set(0, 0, 0);
+      controls.update();
+
+      // ライト
+      const directionalLight = new THREE.DirectionalLight(0xffffff);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      const directionalLight2 = new THREE.DirectionalLight(0xffffff);
+      directionalLight2.position.set(1, 0, 1);
+      scene.add(directionalLight2);
+      
+      // 環境光（モデルが真っ暗になるのを防ぐため追加推奨）
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      // ★重要変更点1：先にループを開始してしまう
+      // これでモデルの読み込み結果に関わらず、画面は描画されます
+      tick();
+
+      // ★重要変更点2：読み込み処理を非同期関数でラップして実行する
+      loadModel();
+
+      async function loadModel() {
+        const loader = new GLTFLoader();
+        try {
+            // 読み込み試行
+            const gltf = await loader.loadAsync("resources/scene.gltf");
+            const model = gltf.scene;
+            
+            // スケール調整
+            model.scale.set(1, 1, 1);
+            scene.add(model);
+            
+            console.log("読み込み成功！");
+        } catch (error) {
+            // エラーが起きたらコンソールに表示
+            console.error("モデルの読み込みに失敗しました。", error);
+            alert("モデル読み込みエラー。F12キーを押してConsoleを確認してください。");
+        }
+      }
+
+      function tick() {
+        renderer.render(scene, camera);
+        requestAnimationFrame(tick);
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+  </body>
+</html>
